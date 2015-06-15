@@ -1,0 +1,15 @@
+<table style="width:100%;height:100%;">
+<tr><th>
+launched March 2003
+</th></tr>
+<tr><th>
+picture of something related satellite
+</th></tr>
+<tr><th>
+weight
+</th></tr>
+<tr><th>
+instruments
+</th></tr>
+</table>
+

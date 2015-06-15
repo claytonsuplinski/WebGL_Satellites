@@ -1,0 +1,627 @@
+<html>
+  <head>
+    <title>SSEC Satellites</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="AUTHOR" content="Clayton Suplinski">
+    <link rel="stylesheet" href="webgl.css" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,200" rel="stylesheet" type="text/css">
+    <link href='https://fonts.googleapis.com/css?family=Raleway:400,200' rel='stylesheet' type='text/css'>
+    <script src="sylvester.js" type="text/javascript"></script>
+    <script src="glUtils.js" type="text/javascript"></script>
+	<script src="./js/moonPosition.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+	<script src="./js/matrixAndShaderManager.js"></script>
+	<script src="./js/webglVariables.js"></script>
+	<script src="./js/mouseManager.js"></script>
+	<script src="./js/editGroundStation.js"></script>
+	<script src="./js/keyPressManager.js"></script>
+	<script src="./js/getTextures.js"></script>
+	<script src="testing_webgl-demo.php" type="text/javascript"></script>
+
+    <!-- Fragment shader program -->
+
+    <script id="shader-fs" type="x-shader/x-fragment">
+	precision mediump float; 
+	
+	varying vec3 normalInterp;
+	varying vec3 vertPos;
+
+      varying highp vec2 vTextureCoord;
+      varying highp vec3 vLighting;
+      
+      uniform sampler2D uSampler;
+      uniform highp vec3 u_moreVariables;
+
+	const vec3 lightPos = vec3(1.0,1.0,100.0);
+	const vec3 ambientColor = vec3(0.3, 0.3, 0.45);
+	const vec3 diffuseColor = vec3(0,0,0);
+	const vec3 specColor = vec3(0.55, 0.55, 0.55);
+
+      void main(void) {
+        highp vec4 texelColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));
+ 
+//	gl_FragColor = vec4(texelColor.rgb * vLighting * vec3(1.0-u_moreVariables[0], 1.0-u_moreVariables[0], 1.0-u_moreVariables[0]), texelColor.a);
+
+    vec3 normal = normalize(normalInterp);
+    vec3 lightDir = normalize(lightPos - vertPos);
+    vec3 reflectDir = reflect(-lightDir, normal);
+    vec3 viewDir = normalize(-vertPos);
+
+    float lambertian = max(dot(lightDir,normal), 0.0);
+    float specular = 0.0;
+
+    if(lambertian > 0.0) {
+       float specAngle = max(dot(reflectDir, viewDir), 0.0);
+       specular = pow(specAngle, 4.0);
+    }
+    gl_FragColor = vec4(texelColor.rgb +
+                      lambertian*diffuseColor +
+                      specular*specColor, texelColor.a) * vec4(1.0-u_moreVariables[0], 1.0-u_moreVariables[0], 1.0-u_moreVariables[0], 1.0);
+
+      }
+    </script>
+    
+    <!-- Vertex shader program -->
+    
+    <script id="shader-vs" type="x-shader/x-vertex">
+      attribute highp vec3 aVertexNormal;
+      attribute highp vec3 aVertexPosition;
+      attribute highp vec2 aTextureCoord;
+    
+      uniform highp mat4 uNormalMatrix;
+      uniform highp mat4 uMVMatrix;
+      uniform highp mat4 uPMatrix;
+      uniform vec3 u_scale;
+      
+      varying highp vec2 vTextureCoord;
+      varying highp vec3 vLighting;
+      varying vec3 normalInterp;
+      varying vec3 vertPos;
+    
+      void main(void) {
+	vec4 mvPosition = uMVMatrix * vec4(aVertexPosition.x * u_scale.x, aVertexPosition.y * u_scale.y, aVertexPosition.z * u_scale.z, 1.0);
+        gl_Position = uPMatrix * mvPosition;
+        vTextureCoord = aTextureCoord;
+        
+        // Apply lighting effect
+        
+        highp vec3 ambientLight = vec3(0.6, 0.6, 0.75);
+        highp vec3 directionalLightColor = vec3(0.55, 0.55, 1.0); //0.5, 0.5, 0.75 looks cooler; 0.75, 0.75, 0.5 looks more realistic
+        highp vec3 directionalVector = vec3(0.85, 0.8, 0.75);
+
+//	vec3 lightDirection = normalize(vec3(2, 0, 0) - mvPosition.xyz);
+        
+//        highp vec4 transformedNormal = uNormalMatrix * vec4(aVertexNormal, 1.0);
+        
+        highp float directional = 0.75;//max(dot(transformedNormal.xyz, lightDirection), 0.0);//0.75;
+//        vLighting = ambientLight + (directionalLightColor * directional);
+
+	vec4 vertPos4 = uMVMatrix * vec4(aVertexPosition, 1.0);
+	vertPos = vec3(vertPos4) / vertPos4.w;
+	normalInterp = vec3(uNormalMatrix * vec4(aVertexNormal, 0.0));
+	vLighting = directionalVector;
+      }
+    </script>
+
+ <link rel="stylesheet" href="//code.jquery.com/ui/1.10.4/themes/smoothness/jquery-ui.css">
+ <script src="//code.jquery.com/jquery-1.10.2.js"></script>
+<script src="//code.jquery.com/ui/1.10.4/jquery-ui.js"></script>
+<script src="TouchSwipe.js"></script>
+
+<script src="./js/mobileManager.js"></script>
+
+
+<script src="./js/hashManager.js"></script>
+ <script>
+var selDate = new Date();
+var day = selDate.getUTCDate();
+var month = selDate.getUTCMonth() + 1;
+var year = selDate.getUTCFullYear();
+
+var monthNames = [ "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December" ];
+
+var currDate = month+"/"+day+"/"+year;
+
+$(function() {
+var availableDates = new Array();
+<?php
+
+foreach(glob("/home/oper/qc/webglSatellites/dataDir/satellitePositions/*.txt") as $filename){
+	$filename = basename($filename);
+	if($filename[5] == '0'){
+		$filename = substr_replace($filename, '', 5, 1);
+	}
+	echo "availableDates.push(".json_encode(substr($filename, 0, -4)).");";	
+}
+
+?>
+function available(date) {
+  var getdate = date.getDate();
+  dmy = date.getFullYear() + "_" + (date.getMonth()+1) + "_" + (getdate > 9 ? getdate : "0"+getdate);
+  if ($.inArray(dmy, availableDates) != -1) {
+    return [true, "","Available"];
+  } else {
+    return [false,"","unAvailable"];
+  }
+}
+
+$( "#date" ).datepicker({
+	beforeShowDay: available,
+	defaultDate: new Date(year, (month-1), day),
+	onSelect: function(){
+		selDate = $( "#date").datepicker( "getDate" );
+                day = selDate.getUTCDate();
+                month = selDate.getUTCMonth() + 1;
+                year = selDate.getUTCFullYear();
+
+		updateHashLink("day", day);
+		updateHashLink("month", month);
+		updateHashLink("year", year);
+
+		document.getElementById("currDate").innerHTML=monthNames[month-1]+" "+day+", "+year;
+		currDate = month+"/"+day+"/"+year;
+	}
+});
+
+selDate = $( "#date").datepicker( "getDate" );
+day = selDate.getUTCDate();
+month = selDate.getUTCMonth() + 1;
+year = selDate.getUTCFullYear();
+
+document.getElementById("currDate").innerHTML=monthNames[month-1]+" "+day+", "+year;
+currDate = month+"/"+day+"/"+year;
+
+});
+
+</script>
+
+<style>
+.satellitesListOnOff, .satellitesListPath, .satellitesListSwath{
+width:10%;
+}
+
+.satellitesListOnOff{
+background:#224422;
+}
+
+/*ADD_GROUND_STATION*/
+.groundStationsButtons{
+width:16.66%;float:left;
+}
+
+.customGroundStationsButtons{
+width:20%;float:left;
+}
+
+.groundStationsButtons:hover{
+background-color:#cccccc;
+}
+
+.tourModeButtons{
+width:50%;float:left;
+}
+.tourModeButtons:hover{
+background-color:#cccccc;
+}
+
+.toggleOptionsButtons{
+width:20%;float:left;
+}
+
+.toggleOptionsButtons:hover{
+background-color:#cccccc;
+}
+
+.centerOfSystemButtons{
+width:50%;float:left;
+}
+
+.centerOfSystemButtons:hover{
+background-color:#cccccc;
+}
+
+.satelliteViewButtons{
+width:33.3%;float:left;
+}
+.satelliteViewButtons:hover{
+background-color:#cccccc;
+}
+
+#meteorScore{
+position:absolute;
+top:40%;left:0px;
+font-size:1vw;
+text-align:center;
+opacity:0.5;
+display:none;
+}
+
+#meteorDisplay{
+position:absolute;
+top:40%;right:0px;
+font-size:1vw;
+text-align:center;
+opacity:0.5;
+display:none;
+width:10vw;
+}
+
+#meteorsDestroyed{
+background:rgba(50, 150, 50, 150);
+color:white;
+float:right;
+width:100%;
+}
+
+#meteorDifficultyLevel{
+background:rgba(50, 50, 50, 150);
+color:white;
+float:right;
+width:100%;
+}
+
+#meteorsMissed{
+background:rgba(150, 50, 50, 150);
+color:white;width:100%;
+float:right;
+}
+
+#meteorToggle{
+width:100%;background:#002266;color:white;float:left;cursor:pointer;
+}
+
+#meteorCoordinatesTitle{
+width:100%;background:black;color:white;float:left;cursor:pointer;
+}
+
+#meteorEasy, #meteorMedium, #meteorHard{
+width:33.33%;float:left;text-align:center;cursor:pointer;
+}
+
+#meteorEasy{background:#003200;}
+#meteorMedium{background:6d5210;}
+#meteorHard{background:#580818;}
+
+#met1Lat, #met2Lat, #met3Lat, #met1Lon, #met2Lon, #met3Lon{
+width:50%;float:right;text-align:center;
+background:#23415a;color:white;
+}
+
+#met3Lat, #met3Lon{
+background:#004646;
+}
+
+#met2Lat, #met2Lon{
+background:#37115a;
+}
+</style>
+
+<link rel="stylesheet" href="index.css" type="text/css">
+<link rel="stylesheet" href="calendar.css" type="text/css">
+
+  </head>
+  
+  <body onload="start()">
+<div id="loadingScreen">
+	<div id="loadingScreenTitle" style="font-size:20vw;top:27.5%;">WxSatS</div><br>
+	<div style="position:fixed;bottom:10%;width:100%;text-align:center;font-size:1vw;">Loading...</div>
+</div>
+<div id="centerFixedDisplay2" style="width:25%;position:fixed;bottom:2vw;left:37.5%;text-align:center;">
+	<div id="following" style="display:none;">
+	<table style="width:100%;">
+		<tr>
+			<th class="centerInformation" style="width:85%;" onclick="$('#followingInfoLeft').toggle('slide', {direction: 'left'}, 'slow');$('#followingInfoRight').toggle('slide', {direction: 'right'}, 'slow');" id="satelliteBeingFollowed"></th>
+			<th class="centerInformation" id="satelliteBeingFollowedFlag"></th>
+		</tr>
+	</table>
+	</div>
+	<div id="rocketFollowing" style="display:none;">
+        <table style="width:100%;">
+                <tr>
+                        <th class="centerInformation" style="width:70%;" id="estimatedFuelCost">Estimated Fuel Cost</th>
+                        <th class="centerInformation" id="estimatedFuelCostValue"></th>
+                </tr>
+        </table>
+        </div>
+	<div id="userCoordinates">
+		<table style="width:100%;">
+			<tr>
+				<th class="centerInformation" id="currHeight" style="font-size:0.8vw;width:40%;"></th>
+				<th class="centerInformation" id="currLat" style="font-size:0.8vw;width:30%;"></th>
+				<th class="centerInformation" id="currLon" style="font-size:0.8vw;"></th>
+			</tr>
+		</table>
+	</div>
+</div>
+
+<div id="bottomline" style="width:75%;height:2vw;position:fixed;bottom:0px;left:12.5%;text-align:center;" onclick="bottomlineUpdate();">
+<table style="width:100%;height:100%;background:rgba(32,32,32,0.5);"></table>
+</div>
+
+<div id="followingInfoLeft" style="display:none;">
+	<table style="height:100%;width:100%;">
+		<tr style="height:100%;width:100%;">
+			<th>Info Tab (under construction)</th>
+		</tr>
+	</table>
+</div>
+<div id="followingInfoRight" style="display:none;">
+	<table style="height:100%;width:100%;">
+		<tr style="height:100%;width:100%;">
+			<th>Info Tab (under construction)</th>
+		</tr>
+	</table>
+</div>
+
+<div id="greenDot">
+	<img src="./greenDot.jpg" style="width:100%;height:100%;">
+</div>
+<div id="worldMap" onclick="$('#largeWorldMapDisplay').toggle('fade');">
+	<img src="./worldMap.png" style="width:100%;height:100%;">
+</div>
+<div id="largeWorldMapDisplay" style="display:none;">
+	<div id="largeWorldMap">
+		<img src="./largeWorldMap.png" style="width:100%;height:100%;">
+	</div>
+	<div id="largeGreenDot"></div>
+	<div id="satelliteDots"></div>
+</div>
+
+<div id="ssecLogo">
+	<img src="https://www.ssec.wisc.edu/images/logo-ssec.png" style="width:100%;height:100%;">
+</div>
+
+<div id="menuIcon" onclick="$('#mainMenu').toggle('fade');">
+<img src="./menuIcon.png" style="width:100%;height:100%;">
+</div>
+
+<div id="navbar" style="z-index:9999;opacity:0.95;" onmousedown="mouseDownHeader=true;">
+	<ul width="100%">
+		<span id="mainMenu" style="display:none;margin-left:3vw;">
+			<li id="help" onclick="$('#helpBox').toggle('clip');"><a>Help</a></li>
+			<li id="satellites" onclick="$('#satellitesList').toggle('clip');"><a>Satellites</a></li>
+			<li id="settings" onclick="$('#settingsBox').toggle('clip');"><a>Settings</a></li>
+			<li id="playback" onclick="$('#playbackBox').toggle('clip');"><a>Playback</a></li>
+			<li id="general" onclick="$('#generalBox').toggle('clip');"><a>General</a></li>
+			<li id="print"></li>
+		</span>
+		<li id="selectDate" onclick="$('#selectDateBox').toggle('clip');$( '#date' ).datepicker('show');" style="float:right;padding-left:0.25em;"><a id="currDate">May 19, 2014</a></li>
+		<li id="info" onclick="$('#timeSelectBox').toggle('clip');" style="float:right;padding-left:0.25em;"><a><span id="currTime">00:00:00</span> UTC</a></li>
+	</ul>
+</div>
+
+
+<div id="loopingAlert">
+	<table style="width:100%;height:100%;background:transparent;opacity:0.5;"><tr><th style="background:#bbffbb">Looping Back to Start of Day</th></tr></table>
+</div>
+
+<div id="selectDateBox" onmousedown="mouseDownHeader=true;">
+	<div id="date" style="border-width:0px;width:100%;height:100%;background:#222222;color:#222222;"></div>
+</div>
+
+<div id="playbackBox" onmousedown="mouseDownHeader=true;">
+	<table style="width:100%;height:100%">
+		<tr style="height:50%;">
+			<td id="reverseButton" onclick="playInReverse = !playInReverse;reverseButton();" onmouseover="$('#reverseButton').css('background-image', 'url(./icons/reverseInverse.png)');" onmouseout="$('#reverseButton').css('background-image', 'url(./icons/reverse.png)');" style="background-image:url('./icons/reverse.png');width:33%;"></td>
+			<td id="playButton" onclick="playPauseButton();" onmouseover="$('#playButton').css('background-image', 'url(./icons/'+ (setToPlayButton ? 'play' : 'pause') +'ButtonInverse.png)');" onmouseout="$('#playButton').css('background-image', 'url(./icons/'+ (setToPlayButton ? 'play' : 'pause') +'Button.png)');" style="background-image:url('./icons/playButton.png');width:34%;"></td>
+			<td id="stopButton" onclick="stopButton();" onmouseover="$('#stopButton').css('background-image', 'url(./icons/stopButtonInverse.png)');" onmouseout="$('#stopButton').css('background-image', 'url(./icons/stopButton.png)');" style="background-image:url('./icons/stopButton.png');width:33%;"></td>
+		</tr>
+		<tr style="height:30%;">
+			<td>Playback Speed</td>
+			<th colspan="2"><div id="sliderSatellite" onmousedown="playInRealtime = false;$('#realtimeButton').css({color:'white'});updateHashLink('realtime', playInRealtime);" style="margin-top:1%;"></div></th>
+		</tr>
+		<tr>
+			<td id="realtimeButton" colspan="3" onclick="realtimeButton();updateHashLink('realtime', playInRealtime);">Real-time</td>
+		</tr>
+	</table>
+</div>
+
+<div id="meteorScore">
+	<div id="meteorToggle" onclick="toggleMeteors();">Meteors Off</div><br>
+	<div style="background:rgba(150, 250, 150, 150);float:left;width:100%;">Meteors Destroyed</div><div id="meteorsDestroyed">0</div><br>
+	<div style="background:rgba(250, 150, 150, 150);float:left;width:100%;">Meteors Missed</div><div id="meteorsMissed">0</div><br>
+	<div style="background:#aaaa00;float:left;width:100%;">Press 'E' to shoot</div>
+</div>
+
+<div id="meteorDisplay">
+	<div id="meteorCoordinatesTitle">Meteor Coordinates</div><br>
+        <div id="met1Lat" style="float:left;width:50%;">0</div><div id="met1Lon">0</div><br>
+        <div id="met2Lat" style="float:left;width:50%;">0</div><div id="met2Lon">0</div><br>
+        <div id="met3Lat" style="float:left;width:50%;">0</div><div id="met3Lon">0</div><br>
+	<div id="meteorDifficultyLevel">
+		<div id="meteorEasy" onclick="numActiveMeteors = 1;meteorDelVelocity = 0.005;if(meteorsOn){genRandomMeteors();}">Easy</div>
+		<div id="meteorMedium" onclick="numActiveMeteors = 2;meteorDelVelocity = 0.008;if(meteorsOn){genRandomMeteors();}">Med</div>
+		<div id="meteorHard" onclick="numActiveMeteors = 3;meteorDelVelocity = 0.01;if(meteorsOn){genRandomMeteors();}">Hard</div>
+	</div>
+</div>
+
+<div id="timeSelectBox" onmousedown="mouseDownHeader=true;">
+	<table style="width:100%;height:100%;">
+		<tr style="height:10%;">
+			<td style="width:33%">Hour</td>
+			<td style="width:33%">Minute</td>
+			<td>Second</td>
+		</tr>
+		<tr style="height:10%;">
+			<th id="setHourDisplay" style="height:15%;">12</th>
+			<th id="setMinuteDisplay">45</th>
+			<th id="setSecondDisplay">55</th>
+		</tr>
+		<tr style="height:70%;">
+			<th><div id="setHourSlider" style="margin-left:49%;height:90%;"></div></th>
+			<th><div id="setMinuteSlider" style="margin-left:49%;height:90%;"></div></th>
+			<th><div id="setSecondSlider" style="margin-left:49%;height:90%;"></div></th>
+		</tr>
+		<tr style="height:10%;">
+			<td id="selectTimeButton" style="height:5%;" colspan="3" onclick="playInRealtime = false;$('#realtimeButton').css({color:'white'});updateHashLink('realtime', playInRealtime);setTime();">Set Time</td>
+		</tr>
+	</table>
+</div>
+
+<div id="settingsBox" onmousedown="mouseDownHeader=true;">
+	<table style="width:100%;height:100%;">
+		<tr>
+                        <td>Center of System</td>
+                        <th>
+                                <div class="centerOfSystemButtons" id="centerAroundEarthButton" onclick="if(centerAroundSun){rY+=earthRotation+90;}centerAroundSun = false;this.style.color='#662233';$('#centerAroundSunButton').css({color:'#222222'});" style="color:#662233">Earth</div>
+                                <div class="centerOfSystemButtons" id="centerAroundSunButton" onclick="if(!centerAroundSun){rY-=earthRotation+90;}centerAroundSun = true;this.style.color='#662233';$('#centerAroundEarthButton').css({color:'#222222'});">Sun</div>
+                        </th>
+                </tr>
+                <tr>
+                        <td>Tour Mode</td>
+                        <th>
+                                <div class="tourModeButtons" id="leftSettingsButton" style="color:#662255" onclick="tourModeRealtime = false;$('#leftSettingsButton').css({color:'#662255'});$('#rightSettingsButton').css({color:'#222222'});">Standard</div>
+                                <div class="tourModeButtons" id="rightSettingsButton" onclick="tourModeRealtime = true;$('#leftSettingsButton').css({color:'#222222'});$('#rightSettingsButton').css({color:'#662255'});">Real-time</div>
+                        </th>
+                </tr>
+		<tr>
+                        <td>Toggle Options</td>
+                        <th>
+                                <div class="toggleOptionsButtons" id="bottomlineButton" onclick="displayBottomline = !displayBottomline;if(displayBottomline){$(this).css({color:'#662255'});bottomlineUpdate();}else{$(this).css({color:'#222222'});$('#bottomline').hide();}updateHashLink('bottomline', displayBottomline);">Bottom-line</div>
+                                <div class="toggleOptionsButtons" id="autoReloadButton" onclick="autoReload = !autoReload;if(autoReload){$(this).css({color:'#662255'});refreshAt(50);}else{$(this).css({color:'#222222'});clearTimeout(autoReloadEventCall);}updateHashLink('autoReload', autoReload);">Auto Reload</div>
+                                <div class="toggleOptionsButtons" id="lowResButton" onclick="if(maxTextureSize >= 8192){selectLowResTexture = !selectLowResTexture;if(selectLowResTexture){$(this).css({color:'#662255'});imageFilenamePrefix = 'lr_';}else{$(this).css({color:'#222222'});imageFilenamePrefix = '';}selectedDate='';updateHashLink('lowRes', selectLowResTexture); }">Low-Res</div>
+                                <div class="toggleOptionsButtons" id="namesButton" onclick="drawNamesToggle();">Names</div>
+				<div class="toggleOptionsButtons" id="realSizeButton" onclick="realSize = !realSize;if(realSize){$(this).css({color:'#662255'});}else{$(this).css({color:'#222222'});}">Real Size</div>
+                        </th>
+                </tr>
+		<tr>
+			<td>Ground Stations</td>
+			<th>
+			<!--ADD_GROUND_STATION-->
+			    <div id="groundStationButtons">
+				<div class="groundStationsButtons" onclick="toggleGroundStation(0);">Madison</div>
+				<div class="groundStationsButtons" onclick="toggleGroundStation(1);">Wallops</div>
+				<div class="groundStationsButtons" onclick="toggleGroundStation(2);">Miami</div>
+				<div class="groundStationsButtons" onclick="toggleGroundStation(3);">Fairbanks</div>
+				<div class="groundStationsButtons" onclick="toggleGroundStation(4);">Svalbard</div>
+			    </div>
+				<div class="groundStationsButtons" onclick="newEditGroundStation();currEditGroundStationLastIndex = true;">+</div>
+			</th>
+		</tr>
+		<tr>
+			<td>Edit Ground Station</td>
+			<th>
+				<div class="customGroundStationsButtons">Lat 
+					<input id="customGroundStationLat" style="width:20%;font-size:0.8vw;" onmousedown="this.focus();"></input>
+				</div>
+				<div class="customGroundStationsButtons">Lon 
+					<input id="customGroundStationLon" style="width:20%;font-size:0.8vw;" onmousedown="this.focus();"></input>
+				</div>
+				<div class="customGroundStationsButtons">Name 
+                                        <input id="customGroundStationName" style="width:50%;font-size:0.8vw;" onmousedown="this.focus();"></input>
+                                </div>
+				<div class="customGroundStationsButtons" onclick="updateEditGroundStation();">Update</div>
+				<div class="customGroundStationsButtons" onclick="removeEditGroundStation();">Remove</div>
+			</th>
+		</tr>
+		<tr>
+			<td>Satellite View</td>
+			<th>
+				<div class="satelliteViewButtons" id="tourButton" onclick="tourModeToggle();">Tour</div>
+				<div class="satelliteViewButtons" id="cinematicButton" onclick="cinematicModeToggle();">Cinematic</div>
+				<div class="satelliteViewButtons" id="satelliteFreeButton" onclick="satelliteFreeModeToggle();">Free</div>
+			</th>
+		</tr>
+		<tr>
+                        <td>Tour Interval</td>
+                        <th><div id="sliderTourInterval"></div></th>
+                </tr>
+                <tr>
+                        <td>Tour Transition</td>
+                        <th><div id="sliderTourTransition"></div></th>
+                </tr>
+                <tr>
+                        <td>Rotate Sensitivity</td>
+                        <th style="width:80%;"><div id="sliderRotate"></div></th>
+                </tr>
+                <tr>
+                        <td>Zoom Sensitivity</td>
+                        <th><div id="sliderZoom"></div></th>
+                </tr>
+
+		<tr style="height:5%;">
+			<td colspan="2">
+				<table style="width:100%;height:100%;margin:0;padding:0;">
+					<tr>
+						<td class="settingsButtons" onclick="window.location.href='//qcweb.ssec.wisc.edu/wxsats/';">Reset</td>
+						<td class="settingsButtons" id="rocketModeButton" onclick="rocketMode = !rocketMode;if(rocketMode){startRocketMode();}else{stopRocketMode();}">Rocket</td>
+						<td class="settingsButtons" style="background:#882222" onclick="selfDestruct=true;$('#settingsBox').hide('clip');$(this).hide('highlight', {color:'red'});$('#rocketModeButton').hide();stopRocketMode();">Self-Destruct</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+	</table>
+</div>
+
+<div id="helpBox">
+<table style="width:100%;height:90%;">
+<tr><td>Left-click</td><th>Drag mouse to rotate</th><td>Right-click or Mouse Wheel</td><th>Drag or roll up/down to zoom</th></tr>
+<tr><td>P</td><th>Play/Pause</th><td>Down/Up Arrow</td><th>Decrease/increase playback speed</th></tr>
+<tr><td>Right Arrow</td><th>Play Forward</th><td>Left Arrow</td><th>Play in Reverse</th></tr>
+<tr><td>F</td><th>Satellite View Toggle</th><td>S</td><th>Satellite Names Toggle</th></tr>
+<tr><td>K</td><th>Ground Stations Toggle</th><td>L</td><th>Satellite Paths Toggle</th></tr>
+<tr><td>D</td><th>Switch View Mode (only in Satellite View)</th><td>N/B</td><th>Jump to Next/Previous Satellite (only in Satellite View)</th></tr>
+<tr><td>T</td><th>Tour Mode Toggle (only in Satellite View)</th><td>C</td><th>Cinematic Mode Toggle (only while playing in Satellite View)</th></tr>
+<tr><td>W</td><th>Accelerate rocket (rocket mode only)</th><td>A</td><th>Slow down rocket (rocket mode only)</th></tr>
+<tr><th colspan="4">Move mouse in any direction to steer rocket (rocket mode only)</th></tr>
+<tr><th colspan="4">-Note: if menu is too small, use CTRL SHIFT + to make it bigger.</th></tr>
+</table>
+</div>
+
+<div id="tourOrCinematicDisplay">
+Begin Tour
+</div>
+
+<div id="generalBox">
+<table style="width:100%;height:100%;">
+<tr><td>Time of Earth Image</td><th id="timeOfEarthImage">--:--:--</th></tr>
+<tr><td>Scale of Satellites</td><th>23900 times real size</th></tr>
+</table>
+</div>
+
+<div id="satellitesList">
+<div style="width:100%;height:2.25vw;">
+<table style="width:100%;height:100%;font-size:1.05vw;">
+<tr>
+	<td>Satellites</td>
+	<td class="satellitesListOnOff" style="width:5%;" id='onOffAll' onmousedown="onOffAll(this);">ON</td>
+	<td class="satellitesListPath" onmousedown='pathAll(this);' style="width:5%;" id='pathAll'>PATH</td>
+	<td class="satellitesListPath" onmousedown='swathAll(this);' style="width:5%;" id='swathAll'>SWATH</td>
+</tr>
+</table>
+</div>
+<div style="float:left;width:50%;" id="geostationarySatellitesList">
+<table style="width:100%;height:100%;">
+<tr><th>Geostationary</th></tr>
+<tr><td>Drag up/down to zoom</td></tr>
+<tr><td>Play/Pause</td></tr>
+<tr><td>Decrease/increase playback speed</td></tr>
+<tr><td>Play Forward</td></tr>
+<tr><td>Play in Reverse</td></tr>
+<tr><td>Satellite View Toggle</td></tr>
+</table>
+</div>
+<div style="float:right;width:50%;" id="polarSatellitesList">
+<table style="width:100%;height:100%;">
+<tr><th>Polar</th></tr>
+<tr><td>Satellite Paths Toggle</td></tr>
+<tr><td>Switch View Mode (only in Satellite View)</td></tr>
+<tr><td>Jump to Next/Previous Satellite (only in Satellite View)</td></tr>
+<tr><td>Tour Mode Toggle (only in Satellite View)</td></tr>
+<tr><td>Cinematic Mode Toggle (only while playing in Satellite View)</td></tr>
+</table>
+</div>
+</div>
+
+    <canvas id="glcanvas" width="1280" height="720" oncontextmenu="return false;">
+      Your browser doesn't appear to support the HTML5 <code>&lt;canvas&gt;</code> element.
+    </canvas>
+
+<script src="./js/resizeCanvas.js"></script>
+<script src="./js/bottomline.js"></script>
+<script src="./js/displayToggles.js"></script>
+<script src="./js/timeManagement.js"></script>
+<script src="./js/rocketModeToggle.js"></script>
+  </body>
+</html>

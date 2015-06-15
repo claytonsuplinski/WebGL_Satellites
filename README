@@ -1,0 +1,84 @@
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Name: Clayton Suplinski
+Project: Webgl Satellites (WxSats)
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Necessary Files/Directories (more to be added later...):
+
+index.php => The main page that displays the menu and canvas for the webgl stuff (the canvas is used for all the 3D stuff on display in the webpage, such as the Earth and satellites).
+
+### Modify this when adding a new model or flag ###
+webgl-demo.php => The page responsible for the webgl stuff in the canvas element of index.php. 
+
+### Modify this when adding a new satellite or model ###
+getSatellitePositions.php => The page responsible for matching satellite names, satellite models, and flags.
+
+sylvester.js => Need this for the webgl stuff to work.
+
+glUtils.js => Contains some functions essential for webgl to work.
+
+webgl.css => Provides formatting for the canvas element in index.php
+
+stars.png => Used to make the skybox
+
+satellite.obj => Used to make the satellite model
+
+satellite.png => The texture for the satellite model
+
+stars.png => Used to make the skybox
+
+satellite.obj => Used to make the satellite model
+
+satellite.png => The texture for the satellite model
+
+./dataDir => Contains the satellite coordinates for each day.
+
+./earthTextures => Contains the textures for the Earth for each day. 
+
+////On prodgen1
+
+/home/oper/cronjobs/funded/wxsat_positions/bin/satellitePositions.bash => Generates the positions for the satellite orbits over the course of a day
+
+### Modify this when adding or removing satellites ###
+/home/oper/cronjobs/funded/wxsat_positions/data/listOfSatellites => A list of satellites the satellitePositions.bash script uses to generate orbits
+
+////On ward (these scripts are not being used anymore)
+
+/home/oper/satellitePositions.bash => Generates the positions for the satellite orbits over the course of a day
+
+/home/oper/listOfSatellites => A list of satellites the satellitePositions.bash script uses to generate orbits
+
+/home/oper/tmpTwoline/. => A directory used by the satellitePositions.bash script
+
+////Other external scripts (made by Rosie and Rick)
+
+Directory for the twoline element png files :
+
+/home/oper/qc/webglSatellites/satellitePaths
+
+They are generated on webgen2  :
+
+/home/oper/cronjobs/orb_plots/poes/bin/webgl_tracks.bash
+
+------------
+
+VIS IR lights directory:
+
+/home/oper/qc/webglSatellites/earthTextures/
+
+Generated on prodgen1/2:
+
+/home/oper/cronjobs/funded/vis-ir-nightlights/bin/make-vis-ir-nightlights.bash
+
+Rick Kohr's notes about this script:
+
+This script creates an image of visible data were it is day light
+# --- and IR data where it is night time.  Suomi NPP nightlights are also
+# --- added where it is night time. The infrared data is subdued.
+# --- Finally, the visible and infrared data are combined and smoothed
+# --- across the terminator.  Surface temperatures from the GFS are
+# --- used to create transparent IR cloud effect.
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////

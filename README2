@@ -1,0 +1,82 @@
+./webglSatellties/
+|-- CVS
+|   |-- Entries
+|   |-- Repository
+|   `-- Root
+|-- TouchSwipe.js	==>  jQuery plugin used for touch screen devices
+|-- bottomlineBackground.png	==>  Background texture for the bottomline
+|-- calendar.css	==>  Manages the appearance of the jQuery calendar in the page
+|-- celestialSphere.png		==>  The skybox texture
+|-- cloudsOnly -> /data/wxsats/cloudsOnly	==>  Where the cloud images are stored
+|-- dataDir -> /data/wxsats/dataDir	==>  Where the satellite coordinates are stored
+|-- daynight	==>  Where the terminators are stored for the sun-centered mode
+|-- earth.png	==>  A default earth texture	
+|-- earth2.png  ==>  Another default earth texture
+|-- earthAtmosphere.png  ==>  A test texture for drawing an atmosphere [not in active use]
+|-- earthAtmosphere2.png  ==>  Another test texture for drawing an atmosphere [not in active use]
+|-- earthCore.png  ==>  Texture for the earth's core
+|-- earthMantle.png  ==>  Texture for the earth's mantle
+|-- earthTexture.jpg  ==>  Another default earth texture
+|-- earthTextures  ==>  Where the earth textures are stored
+|-- flags  ==>  Where the flag icons are stored
+|-- getSatellitePositions.php  ==>  The script used by the web page to get the satellite coordinates
+|-- glUtils.js  ==>  WebGL stuff
+|-- green.png  ==>  Used as a texture for some things throughout the program
+|-- greenDot.jpg  ==>  Used as a texture for some things throughout the program
+|-- icons  ==>  Where the playback icons are stored
+|-- index.css  ==>  Some styling for the main page
+|-- index.php  ==>  The main page
+|-- index.php.bak_20Oct2014.gz  ==>  A backup of the main page?
+|-- javascriptStuff  ==>  Where all the javascript files are stored
+|   |-- bottomline.js  ==>  Manages the bottomline
+|   |-- displayToggles.js  ==>  Manages the display of various elements that can be turned on/off by the user.
+|   |-- editGroundStation.js  ==>  Manages the editable ground stations
+|   |-- getTextures.js  ==>  Loads and implements the textures
+|   |-- hashManager.js  ==>  Manages the hash parameters in the address bar for the page
+|   |-- keyPressManager.js  ==>  Determines what is done whenever a keyboard key is pressed
+|   |-- matrixAndShaderManager.js  ==>  Matrix and shader stuff
+|   |-- mobileManager.js  ==>  Manages the commands for touch screen devices
+|   |-- moonPosition.js ==>  Calculates the moon's position
+|   |-- mouseManager.js  ==>  Determines what is done with each movement or click of the mouse
+|   |-- resizeCanvas.js  ==>  Resizes the display to maintain the correct aspect ratio
+|   |-- rocketModeToggle.js  ==>  Toggles the rocket mode stuff
+|   |-- timeManagement.js  ==>  Allows the user to pick the time for the program and update things accordingly
+|   `-- webglVariables.js  ==>  The declaration and instantiation of most variables used throughout the program
+|-- js -> javascriptStuff/
+|-- largeWorldMap.png  ==>  Map of the globe used in the program
+|-- loadingScreenBackground.png  ==>  One image used as the loading screen
+|-- loadingScreenBackground2.png  ==>  Another image used as the loading screen
+|-- menuIcon.png  ==>  Icon for the menu
+|-- meteor.jpg  ==>  Texture for the meteors
+|-- moon.png  ==>  Texture for the moon
+|-- onOffIcon.png  ==>  Icon for an on/off button [not in active use]
+|-- rainbowGlare.png  ==>  A glare texture for the sun
+|-- rainbowGradient.png  ==>  Texture for the satellite paths
+|-- satelliteModels  ==>  Where all the satellite models and textures are stored
+|-- satelliteNames  ==>  Where all the textures for each satellite name are stored
+|-- satellitePaths  ==>  Where images of all the satellite paths are stored [not in active use]
+|-- stars.png  ==>  Texture for the background
+|-- stars2.png  ==>  Another texture for the background
+|-- sun.png  ==>  Texture for the sun
+|-- sun.png.bak.gz  ==>  Backup texture for the sun?
+|-- sunGlow.png  ==>  Radial texture for the sun's glow
+|-- sunGlow2.png  ==>  Radial texture for the sun's glow
+|-- sunGlow2.png.bak.gz  ==>  Backup for sun's glow?
+|-- sylvester.js  ==>  Important stuff for WebGL
+|-- terminator.png  ==>  Texture to represent the terminator with respect to the sun
+|-- testPages  ==>  Random stuff that did not work or is no longer included in the program
+|-- testing_index.php  ==>  Main page to test stuff out on
+|-- testing_webgl-demo.php  ==>  Main javascript file to test stuff on
+|-- tmpSatellitePath.png  ==>  A sample satellite path image for testing purposes
+|-- transparent-ir.png  ==>  A sample cloud image with transparent background for testing purposes
+|-- transparent-ir.png.bak.gz  ==>  Background cloud texture?
+|-- webgl-demo.js  ==>  Original main javascript file for this program [not in active use]
+|-- webgl-demo.php  ==>  Main javascript file for this program [most important file]
+|-- webgl-demo.php.bak.gz  ==>  Backup of webgl-demo.php
+|-- webgl-demo.php.bak_20Oct2014.gz  ==>  Another backup of webgl-demo.php?
+|-- webgl.css  ==>  Styling with respect to the WebGL stuff
+`-- worldMap.png  ==>  Smaller map for use in the program
+
+14 directories, 4238 files
+
+

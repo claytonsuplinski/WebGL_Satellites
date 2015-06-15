@@ -1,0 +1,18 @@
+<table style="width:100%;height:100%;">
+<tr><th>
+Received on 7.3 meter East Harris Antenna
+</th></tr>
+<tr><th>
+Current Real-time ADDE servers:
+ EASTL on EASTL.SSEC.WISC.EDU
+ EASTS on EASTS.SSEC.WISC.EDU
+</th></tr>
+<tr><th>
+Current Archive ADDE servers:
+ AGOES13 on GEOARC.SSEC.WISC.EDU
+ OGOES13 on OPENARCHIVE.SSEC.WISC.EDU
+</th></tr>
+<tr><th>
+<a href="http://dcdbs.ssec.wisc.edu/inventory/?date=today&time=&satellite=GOES-13&type=Imager,Sounder&coverage=CONUS,ECARIBBEAN,NATLANTIC,NH,SAC,SAS&schedule=ROUTINE-2014,RSO&search=1" target="_blank">Inventory search</a>
+</th></tr>
+</table>
